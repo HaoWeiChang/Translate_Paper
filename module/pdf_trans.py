@@ -2,69 +2,63 @@ from pathlib import Path
 from google_trans_new import google_translator
 import pandas as pd
 import csv
-import os
 
 
-class CsvFile:
+class RootFile:
     def __init__(self) -> None:
+        self.name = ''
         self.columns = ['Document Title', 'PDF Link', 'Abstract']
         self.start = 0
-        self.name = ''
+        self.path = ''
 
-    def InterFaceQ(self) -> int:
-        interface = """
-        ---------------
-        0:輸入檔案
-        1:選擇範圍(未啟用)
-        2:選擇欄位(未啟用)
-        3:執行翻譯
-        4:離開
-        ---------------
-        """
+    def Create(self):
+        pass
+
+    def Info(self):
+        pass
+
+
+class CsvFile(RootFile):
+    def __init__(self) -> None:
+        self.name = ''
+        self.columns = ['Document Title', 'PDF Link', 'Abstract']
+        self.start = 0
+        self.path = ''
+
+    def Create(self):
+        path = input("論文csv路徑:\n> ")
+        file = Path(path)
+        if not file.exists():
+            raise BaseException('檔案不存在，請重新輸入')
+        if file.suffix != '.csv':
+            raise BaseException('非csv，請重新輸入')
+        self.name = file.stem
+        self.path = file.resolve()
+        self.df = pd.read_csv(self.path)
+        self.rows = len(self.df)
+        self.end = len(self.df)
+        return CsvFile
+
+    def Menu(self) -> str:
+        menu = """---------------
+1:選擇範圍(未啟用)
+2:選擇欄位(未啟用)
+3:執行翻譯
+4:離開
+---------------
+"""
         if self.name == '':
             interface += '檔案名稱: \n'
         else:
             interface += """檔案名稱: {}
-        行數範圍: {} ~ {}
-        已選擇欄位: {}
+行數範圍: {} ~ {}
+已選擇欄位: {}
         """.format(self.name, self.start, self.end, self.columns)
-        print(interface)
-        mode = input("> ")
-        os.system('cls')
-        if mode == '0':
-            self.File_Input()
-        # elif mode == '1':
-        #     self.SelectRow()
-        # elif mode == '2':
-        #     self.SelectCol()
-        elif mode == '3':
-            self.CreateTransFile()
-        elif mode == '4':
-            return
-        else:
-            self.InterFaceQ()
-        self.InterFaceQ()
-
-    def File_Input(self):
-        path = input("論文csv路徑:\n> ")
-        file = Path(path)
-        os.system('cls')
-        if not file.exists():
-            print('檔案不存在，請重新輸入\n')
-            return self.File_Input()
-        if file.suffix != '.csv':
-            print('非csv，請重新輸入\n')
-            return self.File_Input()
-        self.name = file.stem
-        self.df = pd.read_csv(file.resolve())
-        self.rows = len(self.df)
-        self.end = len(self.df)
+        return menu
 
     def SelectRow(self):
-        print('請輸入範圍(ex: 1,5 or 5)')
         res = list(map(int, input('> ').split(',')))
         if len(res) == 0:
-            os.system('cls')
             return self.columns
         if len(res) == 1:
             self.start = res[0]
@@ -115,17 +109,3 @@ class CsvFile:
             writer.writerows(trans_rows)
         csvfile.close()
         return
-
-
-def Loading():
-    os.system('cls')
-    figma = '-'
-    finish = '*'
-
-
-def main():
-    csvfile = CsvFile()
-    csvfile.InterFaceQ()
-
-
-main()
