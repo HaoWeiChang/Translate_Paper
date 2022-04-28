@@ -1,0 +1,9 @@
+{
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.diagnosticSeverityOverrides": {
+    
+    },
+    "python.languageServer": "Pylance",
+}
