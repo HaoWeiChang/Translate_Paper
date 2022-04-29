@@ -1,5 +1,6 @@
-from module import interface
+from module import *
+from module.interface import InterFace
 
 if __name__ == '__main__':
-    layout = interface.InterFace()
+    layout = InterFace()
     layout.Menu()

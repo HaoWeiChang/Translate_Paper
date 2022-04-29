@@ -1,4 +1,3 @@
-from numpy import true_divide
 from . import pdf_trans
 import os
 
@@ -84,7 +83,8 @@ class InterFace:
 
             return
         except BaseException as err:
-            print('\r'+err)
+            ClearConsole()
+            ErrorShowHandler(err)
             self.Menu()
 
     def Choose(self):

@@ -1,111 +1,82 @@
+import csv
+from lib2to3.pgen2.pgen import DFAState
 from pathlib import Path
+from signal import raise_signal
 from google_trans_new import google_translator
 import pandas as pd
-import csv
 
 
-class RootFile:
-    def __init__(self) -> None:
+class CsvFile:
+    def __init__(self, path: str) -> None:
         self.name = ''
-        self.columns = ['Document Title', 'PDF Link', 'Abstract']
-        self.start = 0
         self.path = ''
-
-    def Create(self):
-        pass
-
-    def Info(self):
-        pass
-
-
-class CsvFile(RootFile):
-    def __init__(self) -> None:
-        self.name = ''
-        self.columns = ['Document Title', 'PDF Link', 'Abstract']
+        self.columns = ['PDF Link']
+        self.trans = ['Document Title', 'Abstract']
         self.start = 0
-        self.path = ''
+        self.end = 0
+        self.rows = 0
+        self._new(path)
 
-    def Create(self):
-        path = input("論文csv路徑:\n> ")
+    def _new(self, path: str):
         file = Path(path)
         if not file.exists():
             raise BaseException('檔案不存在，請重新輸入')
         if file.suffix != '.csv':
             raise BaseException('非csv，請重新輸入')
+        self._df = pd.read_csv(self.path, encoding='utf-8')
         self.name = file.stem
         self.path = file.resolve()
-        self.df = pd.read_csv(self.path)
-        self.rows = len(self.df)
-        self.end = len(self.df)
-        return CsvFile
+        self._columns = self._df.columns
+        self.end = len(self._df)
+        self.rows = len(self._df)
 
-    def Menu(self) -> str:
-        menu = """---------------
-1:選擇範圍(未啟用)
-2:選擇欄位(未啟用)
-3:執行翻譯
-4:離開
----------------
-"""
-        if self.name == '':
-            interface += '檔案名稱: \n'
-        else:
-            interface += """檔案名稱: {}
-行數範圍: {} ~ {}
-已選擇欄位: {}
-        """.format(self.name, self.start, self.end, self.columns)
-        return menu
+    def select_row(self, start: int = 0, end: int = 0):
+        if start < 0 or end < 0:
+            raise BaseException("Negative number")
+        if end < start:
+            raise BaseException("End_Row can't be less than Start_Row")
+        self.start = 0 if start == 0 else start
+        self.end = self.rows if end == 0 else end
 
-    def SelectRow(self):
-        res = list(map(int, input('> ').split(',')))
-        if len(res) == 0:
-            return self.columns
-        if len(res) == 1:
-            self.start = res[0]
-            self.end = res[1]
-        self.end[0]
-        return
+    def select_column(self, column: list(int)):
+        if len(column) == 0:
+            self.columns = ['PDF Link']
+            return
+        if not 0 <= column < len(self.columns):
+            raise BaseException('column not in range')
+        column = list(set(column))
+        temp = self.columns
+        for select in column:
+            temp.append(self.columns[select])
+        self.columns = list(set(temp))
 
-    def SelectCol(self):
-        selected = self.columns
-        columns = self.df.columns
-        print('*********選擇欄位*********')
-        i = 0
-        for col in columns:
-            show = '{} {}'.format(i, col)
-            if col in selected:
-                show += 'v'
-            i += 1
-            print(show)
-        print('********請輸入數字********')
-        print('********ex: 1 2 3 ********')
-        selector = list(map(int, input(">").split(' ')))
-        temp = []
-        for select in selector:
-            temp.append(columns[select])
-        item = list(set(temp))
-        self.columns = item
-        return
+    @property
+    def get_column(self) -> list(str):
+        return self._columns
 
-    def CreateTransFile(self) -> None:
-        df = self.df[self.item]
+    def create_trans_csv(self):
+        trans = self.trans
+        columns = self.columns
+        df = self._df[trans+columns]
         df = df.iloc[self.start:self.end]
-
-        filename = self.name[0] + '_trans.csv'
-
-        translator = google_translator()
-        trans_row = df.reset_index()
-        with open(filename, 'w', newline='', encoding='utf_8_sig') as csvfile:
+        trans_rows = df.reset_index()
+        filename = self.name + '_trans'
+        with open(filename, mode='w', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['標題', '摘要', '連結'])
-            trans_rows = []
-            for _, row in trans_row.iterrows():
-                res_title = translator.translate(
-                    row["Document Title"], lang_src='en', lang_tgt='zh-tw')
-                res_abstract = translator.translate(
-                    row["Abstract"], lang_src='en', lang_tgt='zh-tw')
-                trans_rows.append(
-                    [res_title, res_abstract, row["PDF Link"]])
-            writer.writerows(trans_rows)
+            writer.writerow()
+        trans_result = []
+        for _, row in trans_rows.iterrows():
+            res1: str = self.__trans(row[self.trans[0]])
+            res2: str = self.__trans(row[self.trans[1]])
+            temp = [res1, res2]
+            for col in columns:
+                temp.append(row[col])
+
+            trans_result.append(temp)
+
         csvfile.close()
-        return
+
+    def __trans(trans_str: str) -> str:
+        translator = google_translator()
+        return translator.translate(
+            trans_str, lang_src='en', lang_tgt='zh-tw')
